@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flip 7 - Controller Pro</title>
+    <style>
+        :root {
+            --primary: #2c3e50; --accent: #e74c3c; --winner: #27ae60;
+            --bg: #ecf0f1; --card: #ffffff; --blue: #3498db; --gray: #bdc3c7; --gold: #f1c40f;
+        }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--primary); user-select: none; }
+        .container { max-width: 500px; margin: auto; }
+        .header-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn-tool { padding: 8px 12px; border-radius: 6px; border: none; background: var(--primary); color: white; font-size: 0.8rem; cursor: pointer; }
+        
+        .player-card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 8px solid var(--gray); position: relative; }
+        .player-card.active { border-left-color: var(--blue); border: 2px solid var(--blue); }
+        .player-card.waiting { opacity: 0.5; pointer-events: none; }
+        
+        .btn-delete { position: absolute; left: -10px; top: -10px; background: var(--accent); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
+
+        .player-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .name-group { display: flex; align-items: center; gap: 10px; }
+        .rank { background: #34495e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .score-total { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+        
+        .numpad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+        .btn-val { padding: 12px 0; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .btn-val:disabled { background: var(--gray); color: #888; opacity: 0.2; transform: scale(0.95); }
+        .btn-bonus { background: #ffeaa7; border-color: #fdcb6e; }
+        .btn-special { background: #fab1a0; border-color: #e17055; }
+        
+        .current-calc { background: #f1f2f6; padding: 12px; border-radius: 8px; text-align: center; margin: 10px 0; border: 2px dashed #ccc; min-height: 50px; }
+        .calc-detail { color: #7f8c8d; font-size: 0.85rem; display: block; margin-bottom: 5px; }
+        .calc-result { font-weight: bold; color: var(--blue); font-size: 1.4rem; }
+        .flip7-badge { background: var(--gold); color: #000; font-weight: bold; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; display: inline-block; margin-bottom: 5px; }
+        
+        .btn-confirm { grid-column: span 4; padding: 18px; background: var(--winner); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .history { font-size: 0.8rem; color: #95a5a6; margin-top: 10px; border-top: 1px solid #eee; padding-top: 5px; overflow-x: auto; white-space: nowrap; }
+        
+        .modal { background: rgba(0,0,0,0.8); position: fixed; top:0; left:0; right:0; bottom:0; display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 80%; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-tools">
+        <button class="btn-tool" onclick="addPlayerPrompt()">+ Joueur</button>
+        <div>
+            <button class="btn-tool" onclick="exportData()">Export</button>
+            <button class="btn-tool" onclick="importData()">Import</button>
+        </div>
+        <button class="btn-tool" style="background:var(--accent)" onclick="resetGame()">Reset</button>
+    </div>
+    <div id="gameBoard"></div>
+</div>
+
+<div id="winModal" class="modal">
+    <div class="modal-content">
+        <h2 id="winName"></h2>
+        <h1 id="winScore" style="color:var(--winner)"></h1>
+        <button class="btn-confirm" onclick="resetGame()">Nouvelle Partie</button>
+    </div>
+</div>
+
+<script>
+    let players = JSON.parse(localStorage.getItem('flip7_v10')) || [];
+    let cardsSum = 0;
+    let bonusSum = 0;
+    let multiplier = 1;
+    let selectedElements = [];
+    let calcHistory = { cards: [], bonuses: [] };
+
+    function save() { localStorage.setItem('flip7_v10', JSON.stringify(players)); }
+
+    function addPlayerPrompt() {
+        const name = prompt("Nom du joueur :");
+        if(name && name.trim() !== "") { 
+            players.push({ id: Date.now(), name: name.trim(), scores: [], total: 0 }); 
+            save(); render(); 
+        }
+    }
+
+    function deletePlayer(id) {
+        if(confirm("Supprimer ce joueur définitivement ?")) {
+            players = players.filter(p => p.id !== id);
+            save(); render();
+        }
+    }
+
+    function addToTemp(val, type, btnId) {
+        if(type === 'card') {
+            cardsSum += val;
+            calcHistory.cards.push(val);
+        } else if (type === 'bonus_pts') {
+            bonusSum += val;
+            calcHistory.bonuses.push(`+${val}`);
+        } else if (type === 'multiplier') {
+            multiplier *= 2;
+            calcHistory.bonuses.push(`x2`);
+        }
+        selectedElements.push(btnId);
+        render();
+    }
+
+    function clearTemp() {
+        cardsSum = 0; bonusSum = 0; multiplier = 1;
+        selectedElements = [];
+        calcHistory = { cards: [], bonuses: [] };
+        render();
+    }
+
+    function confirmScore(playerId) {
+        const p = players.find(x => x.id === playerId);
+        const f7Bonus = calcHistory.cards.length >= 7 ? 15 : 0;
+        const totalRound = (cardsSum * multiplier) + bonusSum + f7Bonus;
+        p.scores.push(totalRound);
+        p.total = p.scores.reduce((a,b) => a + b, 0);
+        clearTemp(); save(); render(); checkWin();
+    }
+
+    function checkWin() {
+        const rounds = players.map(p => p.scores.length);
+        if(players.length > 0 && Math.min(...rounds) === Math.max(...rounds) && rounds[0] > 0) {
+            if(players.some(p => p.total >= 200)) {
+                const winner = [...players].sort((a,b) => b.total - a.total)[0];
+                document.getElementById('winName').innerText = "🏆 " + winner.name;
+                document.getElementById('winScore').innerText = winner.total + " pts";
+                document.getElementById('winModal').style.display = 'flex';
+            }
+        }
+    }
+
+    function resetGame() {
+        if(confirm("Réinitialiser les scores ?")) {
+            players.forEach(p => { p.scores = []; p.total = 0; });
+            document.getElementById('winModal').style.display = 'none';
+            clearTemp(); save(); render();
+        }
+    }
+
+    // Exportation robuste (supporte les accents)
+    function exportData() {
+        if(players.length === 0) return alert("Rien à exporter");
+        const str = JSON.stringify(players);
+        const bytes = new TextEncoder().encode(str);
+        const b64 = btoa(String.fromCharCode(...bytes));
+        prompt("Copiez ce code de sauvegarde :", b64);
+    }
+
+    // Importation robuste (supporte les accents)
+    function importData() {
+        const b64 = prompt("Collez votre code de sauvegarde :");
+        if(!b64) return;
+        try {
+            const binary = atob(b64);
+            const bytes = new Uint8Array([...binary].map(char => char.charCodeAt(0)));
+            const decoded = new TextDecoder().decode(bytes);
+            players = JSON.parse(decoded);
+            save(); render();
+        } catch(e) {
+            alert("Erreur : Le code est invalide ou corrompu.");
+        }
+    }
+
+    function render() {
+        const board = document.getElementById('gameBoard');
+        board.innerHTML = '';
+        if (players.length === 0) {
+            board.innerHTML = '<p style="text-align:center; color:gray; margin-top:50px;">Appuyez sur + Joueur</p>';
+            return;
+        }
+        
+        const minRounds = Math.min(...players.map(p => p.scores.length));
+        const activePlayer = players.find(p => p.scores.length === minRounds);
+        const sorted = [...players].sort((a,b) => b.total - a.total);
+        const isFlip7 = calcHistory.cards.length >= 7;
+
+        players.forEach(p => {
+            const isTurn = activePlayer && p.id === activePlayer.id;
+            const rank = sorted.findIndex(x => x.id === p.id) + 1;
+            const f7Val = isFlip7 ? 15 : 0;
+            const currentTotal = (cardsSum * multiplier) + bonusSum + f7Val;
+
+            let detailStr = "";
+            if(calcHistory.cards.length > 0) {
+                detailStr += (multiplier > 1) ? `(${calcHistory.cards.join('+')})x${multiplier}` : `${calcHistory.cards.join('+')}`;
+            }
+            if(calcHistory.bonuses.length > 0) detailStr += ` ${calcHistory.bonuses.filter(b => b !== 'x2').join(' ')}`;
+            if(isFlip7) detailStr += " +15(F7)";
+
+            const card = document.createElement('div');
+            card.className = `player-card ${isTurn ? 'active' : 'waiting'}`;
+            card.innerHTML = `
+                <button class="btn-delete" onclick="deletePlayer(${p.id})">✕</button>
+                <div class="player-info">
+                    <div class="name-group"><span class="rank">#${rank}</span><strong>${p.name}</strong></div>
+                    <div class="score-total">${p.total}</div>
+                </div>
+                ${isTurn ? `
+                    <div class="current-calc">
+                        ${isFlip7 ? '<div class="flip7-badge">✨ FLIP 7 !</div>' : ''}
+                        <span class="calc-detail">${detailStr || 'Sélectionnez les cartes...'}</span>
+                        <span class="calc-result">${detailStr ? '= ' + currentTotal : ''}</span>
+                    </div>
+                    <div class="numpad">
+                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val" id="c-${v}" onclick="addToTemp(${v},'card','c-${v}')" ${selectedElements.includes('c-'+v) || isFlip7 ? 'disabled' : ''}>${v}</button>`).join('')}
+                        ${[2,4,6,8,10].map(v => `<button class="btn-val btn-bonus" id="b-${v}" onclick="addToTemp(${v},'bonus_pts','b-${v}')" ${selectedElements.includes('b-'+v) ? 'disabled' : ''}>+${v}</button>`).join('')}
+                        <button class="btn-val btn-bonus" id="m-x2" onclick="addToTemp(2,'multiplier','m-x2')" ${selectedElements.includes('m-x2') ? 'disabled' : ''}>x2</button>
+                        <button class="btn-val btn-special" onclick="clearTemp()">Effacer</button>
+                        <button class="btn-confirm" onclick="confirmScore(${p.id})">VALIDER TOUR</button>
+                    </div>
+                ` : ''}
+                <div class="history">Scores: ${p.scores.length > 0 ? p.scores.join(' | ') : '0'}</div>
+            `;
+            board.appendChild(card);
+        });
+    }
+    render();
+</script>
+</body>
+</html>
