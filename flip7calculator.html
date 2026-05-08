@@ -3,220 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flip 7 - Controller Pro</title>
+    <title>Flip 7 - V19 Stable</title>
     <style>
         :root {
             --primary: #2c3e50; --accent: #e74c3c; --winner: #27ae60;
-            --bg: #ecf0f1; --card: #ffffff; --blue: #3498db; --gray: #bdc3c7; --gold: #f1c40f;
+            --bg: #ecf0f1; --card: #ffffff; --blue: #3498db; --gray: #bdc3c7;
+            --gold: #f1c40f; --silver: #bdc3c7; --bronze: #cd7f32;
         }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--primary); user-select: none; }
-        .container { max-width: 500px; margin: auto; }
-        .header-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .container { max-width: 500px; margin: auto; padding-bottom: 90px; }
+        .header-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 5px; }
         .btn-tool { padding: 8px 12px; border-radius: 6px; border: none; background: var(--primary); color: white; font-size: 0.8rem; cursor: pointer; }
-        
-        .player-card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 8px solid var(--gray); position: relative; }
-        .player-card.active { border-left-color: var(--blue); border: 2px solid var(--blue); }
-        .player-card.waiting { opacity: 0.5; pointer-events: none; }
-        
-        .btn-delete { position: absolute; left: -10px; top: -10px; background: var(--accent); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
-
-        .player-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .name-group { display: flex; align-items: center; gap: 10px; }
-        .rank { background: #34495e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
-        .score-total { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
-        
-        .numpad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
-        .btn-val { padding: 12px 0; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .btn-val:disabled { background: var(--gray); color: #888; opacity: 0.2; transform: scale(0.95); }
-        .btn-bonus { background: #ffeaa7; border-color: #fdcb6e; }
-        .btn-special { background: #fab1a0; border-color: #e17055; }
-        
-        .current-calc { background: #f1f2f6; padding: 12px; border-radius: 8px; text-align: center; margin: 10px 0; border: 2px dashed #ccc; min-height: 50px; }
-        .calc-detail { color: #7f8c8d; font-size: 0.85rem; display: block; margin-bottom: 5px; }
-        .calc-result { font-weight: bold; color: var(--blue); font-size: 1.4rem; }
-        .flip7-badge { background: var(--gold); color: #000; font-weight: bold; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; display: inline-block; margin-bottom: 5px; }
-        
-        .btn-confirm { grid-column: span 4; padding: 18px; background: var(--winner); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .history { font-size: 0.8rem; color: #95a5a6; margin-top: 10px; border-top: 1px solid #eee; padding-top: 5px; overflow-x: auto; white-space: nowrap; }
-        
+        .btn-tool.active { background: var(--blue); border: 2px solid white; }
+        .player-card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 8px solid var(--gray); position: relative; transition: 0.3s; }
+        .player-card.ready { border-left-color: var(--winner); background: #f0fff4; }
+        .btn-delete { position: absolute; left: -8px; top: -8px; background: var(--accent); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 5; }
+        .rank-badge { position: absolute; left: 20px; top: -10px; padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; color: white; background: #95a5a6; }
+        .rank-1 { background: var(--gold); color: #000; }
+        .rank-2 { background: var(--silver); color: #000; }
+        .rank-3 { background: var(--bronze); }
+        .reorder-tools { position: absolute; right: 10px; top: -10px; display: flex; gap: 5px; }
+        .btn-move { background: white; border: 1px solid var(--gray); border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; }
+        .player-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 5px; }
+        .score-total { font-size: 1.6rem; font-weight: 900; color: var(--accent); cursor: pointer; text-decoration: underline dotted; }
+        .numpad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+        .btn-val { padding: 10px 0; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .btn-val:disabled { opacity: 0.2; }
+        .btn-bonus { background: #ffeaa7; }
+        .btn-special { background: #fab1a0; }
+        .current-calc { background: rgba(0,0,0,0.03); padding: 8px; border-radius: 8px; text-align: center; margin: 8px 0; border: 1px dashed #ccc; min-height: 40px; }
+        .calc-detail { color: #7f8c8d; font-size: 0.8rem; display: block; }
+        .calc-result { font-weight: bold; color: var(--blue); font-size: 1.2rem; }
+        .btn-confirm { grid-column: span 4; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 5px; cursor: pointer; }
+        .ready-msg { grid-column: span 4; color: var(--winner); font-weight: bold; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; z-index: 100; }
+        .btn-next-round { background: var(--winner); color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .btn-next-round:disabled { background: var(--gray); opacity: 0.5; }
+        .history { font-size: 0.75rem; color: #95a5a6; margin-top: 8px; border-top: 1px solid #eee; padding-top: 4px; overflow-x: auto; white-space: nowrap; }
         .modal { background: rgba(0,0,0,0.8); position: fixed; top:0; left:0; right:0; bottom:0; display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 80%; text-align: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header-tools">
-        <button class="btn-tool" onclick="addPlayerPrompt()">+ Joueur</button>
-        <div>
+        <div class="btn-group">
+            <button class="btn-tool" onclick="addPlayer()">+ Joueur</button>
+            <button id="btnAutoSort" class="btn-tool" onclick="toggleAutoSort()">Auto-Tri: OFF</button>
+        </div>
+        <div class="btn-group">
             <button class="btn-tool" onclick="exportData()">Export</button>
             <button class="btn-tool" onclick="importData()">Import</button>
+            <button class="btn-tool" style="background:var(--accent)" onclick="resetGame()">Reset</button>
         </div>
-        <button class="btn-tool" style="background:var(--accent)" onclick="resetGame()">Reset</button>
     </div>
     <div id="gameBoard"></div>
 </div>
 
+<div class="footer-nav">
+    <button id="nextRoundBtn" class="btn-next-round" onclick="finishRound()" disabled>Finir la manche</button>
+</div>
+
 <div id="winModal" class="modal">
     <div class="modal-content">
-        <h2 id="winName"></h2>
-        <h1 id="winScore" style="color:var(--winner)"></h1>
-        <button class="btn-confirm" onclick="resetGame()">Nouvelle Partie</button>
+        <h2 id="winName">🏆 Gagnant !</h2>
+        <h1 id="winScore" style="color:var(--winner); font-size: 3rem;">0</h1>
+        <button class="btn-tool" style="padding:15px 30px; width:100%; font-size: 1rem; background: var(--winner);" onclick="resetGame()">Nouvelle Partie</button>
     </div>
 </div>
 
 <script>
-    let players = JSON.parse(localStorage.getItem('flip7_v10')) || [];
-    let cardsSum = 0;
-    let bonusSum = 0;
-    let multiplier = 1;
-    let selectedElements = [];
-    let calcHistory = { cards: [], bonuses: [] };
+    let players = JSON.parse(localStorage.getItem('flip7_v19')) || [];
+    let autoSort = JSON.parse(localStorage.getItem('flip7_autosort')) || false;
+    let currentTurnData = {}; 
 
-    function save() { localStorage.setItem('flip7_v10', JSON.stringify(players)); }
+    function save() { 
+        localStorage.setItem('flip7_v19', JSON.stringify(players));
+        localStorage.setItem('flip7_autosort', JSON.stringify(autoSort));
+    }
 
-    function addPlayerPrompt() {
-        const name = prompt("Nom du joueur :");
-        if(name && name.trim() !== "") { 
-            players.push({ id: Date.now(), name: name.trim(), scores: [], total: 0 }); 
-            save(); render(); 
+    // NOUVELLE LOGIQUE EXPORT / IMPORT (ANTI-BUG ACCENTS)
+    function exportData() {
+        if (players.length === 0) return alert("Rien à exporter");
+        const json = JSON.stringify(players);
+        // On encode en UTF-8 pour supporter les accents avant le b64
+        const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        prompt("Code de sauvegarde (Accents inclus) :", b64);
+    }
+
+    function importData() {
+        const b64 = prompt("Collez votre code de sauvegarde :");
+        if (!b64) return;
+        try {
+            // Décodage inverse de l'UTF-8
+            const json = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const data = JSON.parse(json);
+            if (Array.isArray(data)) {
+                players = data;
+                save(); render();
+                alert("Import réussi !");
+            }
+        } catch (e) {
+            alert("Erreur : Le code est invalide ou contient des caractères non supportés.");
         }
     }
 
-    function deletePlayer(id) {
-        if(confirm("Supprimer ce joueur définitivement ?")) {
-            players = players.filter(p => p.id !== id);
+    function addPlayer() {
+        const name = prompt("Nom du joueur :");
+        if(name) {
+            const id = Date.now();
+            players.push({ id, name, scores: [], total: 0 });
+            initPlayerData(id); save(); render();
+        }
+    }
+
+    function initPlayerData(id) {
+        currentTurnData[id] = { cardsSum: 0, bonusSum: 0, multiplier: 1, selected: [], history: {cards:[], bonuses:[]}, isReady: false };
+    }
+
+    function toggleAutoSort() { autoSort = !autoSort; save(); render(); }
+
+    function movePlayer(index, direction) {
+        if (autoSort) return;
+        const newIndex = index + direction;
+        if (newIndex >= 0 && newIndex < players.length) {
+            [players[index], players[newIndex]] = [players[newIndex], players[index]];
             save(); render();
         }
     }
 
-    function addToTemp(val, type, btnId) {
-        if(type === 'card') {
-            cardsSum += val;
-            calcHistory.cards.push(val);
-        } else if (type === 'bonus_pts') {
-            bonusSum += val;
-            calcHistory.bonuses.push(`+${val}`);
-        } else if (type === 'multiplier') {
-            multiplier *= 2;
-            calcHistory.bonuses.push(`x2`);
+    function deletePlayer(id) {
+        if(confirm("Supprimer ce joueur ?")) {
+            players = players.filter(p => p.id !== id);
+            delete currentTurnData[id];
+            save(); render();
         }
-        selectedElements.push(btnId);
+    }
+
+    function editTotal(id) {
+        const p = players.find(x => x.id === id);
+        const input = prompt(`Modifier le score total de ${p.name} :`, p.total);
+        if(input !== null) {
+            const newTotal = parseInt(input) || 0;
+            const adjustment = newTotal - p.total;
+            if (adjustment !== 0) {
+                p.scores.push(adjustment);
+                p.total = newTotal;
+                save(); render();
+            }
+        }
+    }
+
+    function addToTemp(playerId, val, type, btnId) {
+        let d = currentTurnData[playerId];
+        if(type === 'card') { d.cardsSum += val; d.history.cards.push(val); }
+        else if (type === 'bonus_pts') { d.bonusSum += val; d.history.bonuses.push(`+${val}`); }
+        else if (type === 'multiplier') { d.multiplier *= 2; d.history.bonuses.push(`x2`); }
+        d.selected.push(btnId);
         render();
     }
 
-    function clearTemp() {
-        cardsSum = 0; bonusSum = 0; multiplier = 1;
-        selectedElements = [];
-        calcHistory = { cards: [], bonuses: [] };
-        render();
-    }
+    function clearTemp(id) { initPlayerData(id); render(); }
+    function setPlayerReady(id, ready) { currentTurnData[id].isReady = ready; render(); }
 
-    function confirmScore(playerId) {
-        const p = players.find(x => x.id === playerId);
-        const f7Bonus = calcHistory.cards.length >= 7 ? 15 : 0;
-        const totalRound = (cardsSum * multiplier) + bonusSum + f7Bonus;
-        p.scores.push(totalRound);
-        p.total = p.scores.reduce((a,b) => a + b, 0);
-        clearTemp(); save(); render(); checkWin();
+    function finishRound() {
+        players.forEach(p => {
+            const d = currentTurnData[p.id];
+            const f7 = d.history.cards.length >= 7 ? 15 : 0;
+            const roundScore = (d.cardsSum * d.multiplier) + d.bonusSum + f7;
+            p.scores.push(roundScore);
+            p.total = p.scores.reduce((a,b) => a+b, 0);
+            initPlayerData(p.id);
+        });
+        save(); render(); checkWin();
     }
 
     function checkWin() {
-        const rounds = players.map(p => p.scores.length);
-        if(players.length > 0 && Math.min(...rounds) === Math.max(...rounds) && rounds[0] > 0) {
-            if(players.some(p => p.total >= 200)) {
-                const winner = [...players].sort((a,b) => b.total - a.total)[0];
-                document.getElementById('winName').innerText = "🏆 " + winner.name;
-                document.getElementById('winScore').innerText = winner.total + " pts";
-                document.getElementById('winModal').style.display = 'flex';
-            }
+        const winners = players.filter(p => p.total >= 200);
+        if (winners.length > 0) {
+            const winner = [...winners].sort((a,b) => b.total - a.total)[0];
+            document.getElementById('winName').innerText = "🏆 " + winner.name;
+            document.getElementById('winScore').innerText = winner.total + " pts";
+            document.getElementById('winModal').style.display = 'flex';
         }
     }
 
     function resetGame() {
         if(confirm("Réinitialiser les scores ?")) {
-            players.forEach(p => { p.scores = []; p.total = 0; });
-            document.getElementById('winModal').style.display = 'none';
-            clearTemp(); save(); render();
+            players.forEach(p => { p.scores = []; p.total = 0; initPlayerData(p.id); });
+            save(); document.getElementById('winModal').style.display = 'none'; render();
         }
     }
 
-    // Exportation robuste (supporte les accents)
-    function exportData() {
-        if(players.length === 0) return alert("Rien à exporter");
-        const str = JSON.stringify(players);
-        const bytes = new TextEncoder().encode(str);
-        const b64 = btoa(String.fromCharCode(...bytes));
-        prompt("Copiez ce code de sauvegarde :", b64);
-    }
-
-    // Importation robuste (supporte les accents)
-    function importData() {
-        const b64 = prompt("Collez votre code de sauvegarde :");
-        if(!b64) return;
-        try {
-            const binary = atob(b64);
-            const bytes = new Uint8Array([...binary].map(char => char.charCodeAt(0)));
-            const decoded = new TextDecoder().decode(bytes);
-            players = JSON.parse(decoded);
-            save(); render();
-        } catch(e) {
-            alert("Erreur : Le code est invalide ou corrompu.");
-        }
+    function getRank(player) {
+        if (players.length === 0) return 0;
+        const sortedTotals = [...new Set(players.map(p => p.total))].sort((a,b) => b - a);
+        return sortedTotals.indexOf(player.total) + 1;
     }
 
     function render() {
         const board = document.getElementById('gameBoard');
         board.innerHTML = '';
-        if (players.length === 0) {
-            board.innerHTML = '<p style="text-align:center; color:gray; margin-top:50px;">Appuyez sur + Joueur</p>';
-            return;
-        }
-        
-        const minRounds = Math.min(...players.map(p => p.scores.length));
-        const activePlayer = players.find(p => p.scores.length === minRounds);
-        const sorted = [...players].sort((a,b) => b.total - a.total);
-        const isFlip7 = calcHistory.cards.length >= 7;
+        let displayList = [...players];
+        if (autoSort) displayList.sort((a, b) => b.total - a.total);
 
-        players.forEach(p => {
-            const isTurn = activePlayer && p.id === activePlayer.id;
-            const rank = sorted.findIndex(x => x.id === p.id) + 1;
-            const f7Val = isFlip7 ? 15 : 0;
-            const currentTotal = (cardsSum * multiplier) + bonusSum + f7Val;
-
+        displayList.forEach((p) => {
+            if(!currentTurnData[p.id]) initPlayerData(p.id);
+            const d = currentTurnData[p.id];
+            const f7 = d.history.cards.length >= 7 ? 15 : 0;
+            const currentTotal = (d.cardsSum * d.multiplier) + d.bonusSum + f7;
+            const rank = getRank(p);
             let detailStr = "";
-            if(calcHistory.cards.length > 0) {
-                detailStr += (multiplier > 1) ? `(${calcHistory.cards.join('+')})x${multiplier}` : `${calcHistory.cards.join('+')}`;
-            }
-            if(calcHistory.bonuses.length > 0) detailStr += ` ${calcHistory.bonuses.filter(b => b !== 'x2').join(' ')}`;
-            if(isFlip7) detailStr += " +15(F7)";
+            if(d.history.cards.length > 0) detailStr += (d.multiplier > 1) ? `(${d.history.cards.join('+')})x${d.multiplier}` : d.history.cards.join('+');
+            if(d.history.bonuses.length > 0) detailStr += ` ${d.history.bonuses.filter(b=>b!=='x2').join(' ')}`;
+            if(f7 > 0) detailStr += " +15(F7)";
 
             const card = document.createElement('div');
-            card.className = `player-card ${isTurn ? 'active' : 'waiting'}`;
+            card.className = `player-card ${d.isReady ? 'ready' : ''}`;
             card.innerHTML = `
                 <button class="btn-delete" onclick="deletePlayer(${p.id})">✕</button>
-                <div class="player-info">
-                    <div class="name-group"><span class="rank">#${rank}</span><strong>${p.name}</strong></div>
-                    <div class="score-total">${p.total}</div>
-                </div>
-                ${isTurn ? `
-                    <div class="current-calc">
-                        ${isFlip7 ? '<div class="flip7-badge">✨ FLIP 7 !</div>' : ''}
-                        <span class="calc-detail">${detailStr || 'Sélectionnez les cartes...'}</span>
-                        <span class="calc-result">${detailStr ? '= ' + currentTotal : ''}</span>
-                    </div>
-                    <div class="numpad">
-                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val" id="c-${v}" onclick="addToTemp(${v},'card','c-${v}')" ${selectedElements.includes('c-'+v) || isFlip7 ? 'disabled' : ''}>${v}</button>`).join('')}
-                        ${[2,4,6,8,10].map(v => `<button class="btn-val btn-bonus" id="b-${v}" onclick="addToTemp(${v},'bonus_pts','b-${v}')" ${selectedElements.includes('b-'+v) ? 'disabled' : ''}>+${v}</button>`).join('')}
-                        <button class="btn-val btn-bonus" id="m-x2" onclick="addToTemp(2,'multiplier','m-x2')" ${selectedElements.includes('m-x2') ? 'disabled' : ''}>x2</button>
-                        <button class="btn-val btn-special" onclick="clearTemp()">Effacer</button>
-                        <button class="btn-confirm" onclick="confirmScore(${p.id})">VALIDER TOUR</button>
+                <div class="rank-badge rank-${rank}">${rank}${rank === 1 ? 'er' : 'e'}</div>
+                ${!autoSort ? `
+                    <div class="reorder-tools">
+                        <button class="btn-move" onclick="movePlayer(${players.indexOf(p)}, -1)">↑</button>
+                        <button class="btn-move" onclick="movePlayer(${players.indexOf(p)}, 1)">↓</button>
                     </div>
                 ` : ''}
-                <div class="history">Scores: ${p.scores.length > 0 ? p.scores.join(' | ') : '0'}</div>
+                <div class="player-info"><strong>${p.name}</strong><div class="score-total" onclick="editTotal(${p.id})">${p.total}</div></div>
+                ${!d.isReady ? `
+                    <div class="current-calc"><span class="calc-detail">${detailStr || 'Saisie...'}</span><span class="calc-result">${detailStr ? '= ' + currentTotal : ''}</span></div>
+                    <div class="numpad">
+                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val" id="c-${p.id}-${v}" onclick="addToTemp(${p.id},${v},'card','c-${p.id}-${v}')" ${d.selected.includes(`c-${p.id}-${v}`) || d.history.cards.length >= 7 ? 'disabled' : ''}>${v}</button>`).join('')}
+                        ${[2,4,6,8,10].map(v => `<button class="btn-val btn-bonus" id="b-${p.id}-${v}" onclick="addToTemp(${p.id},${v},'bonus_pts','b-${p.id}-${v}')" ${d.selected.includes(`b-${p.id}-${v}`) ? 'disabled' : ''}>+${v}</button>`).join('')}
+                        <button class="btn-val btn-bonus" id="m-${p.id}" onclick="addToTemp(${p.id},2,'multiplier','m-${p.id}')" ${d.selected.includes(`m-${p.id}`) ? 'disabled' : ''}>x2</button>
+                        <button class="btn-val btn-special" onclick="clearTemp(${p.id})">C</button>
+                        <button class="btn-confirm" onclick="setPlayerReady(${p.id}, true)">VALIDER (${currentTotal})</button>
+                    </div>
+                ` : `<div class="ready-msg"><span>Prêt : ${currentTotal}</span><button class="btn-tool" onclick="setPlayerReady(${p.id}, false)">Modifier</button></div>`}
+                <div class="history">Scores: ${p.scores.join(' | ') || 'vide'}</div>
             `;
             board.appendChild(card);
         });
+
+        document.getElementById('btnAutoSort').innerText = autoSort ? "Auto-Tri: ON" : "Auto-Tri: OFF";
+        document.getElementById('btnAutoSort').classList.toggle('active', autoSort);
+        const allReady = players.length > 0 && players.every(p => currentTurnData[p.id].isReady);
+        document.getElementById('nextRoundBtn').disabled = !allReady;
     }
     render();
 </script>
