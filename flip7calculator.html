@@ -3,49 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flip 7 - V19 Stable</title>
+    <title>Flip 7 - V20</title>
     <style>
         :root {
             --primary: #2c3e50; --accent: #e74c3c; --winner: #27ae60;
             --bg: #ecf0f1; --card: #ffffff; --blue: #3498db; --gray: #bdc3c7;
             --gold: #f1c40f; --silver: #bdc3c7; --bronze: #cd7f32;
         }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--primary); user-select: none; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--primary); user-select: none; overflow-x: hidden; }
         .container { max-width: 500px; margin: auto; padding-bottom: 90px; }
+        
         .header-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .btn-group { display: flex; gap: 5px; }
-        .btn-tool { padding: 8px 12px; border-radius: 6px; border: none; background: var(--primary); color: white; font-size: 0.8rem; cursor: pointer; }
-        .btn-tool.active { background: var(--blue); border: 2px solid white; }
-        .player-card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 8px solid var(--gray); position: relative; transition: 0.3s; }
+        .btn-tool { padding: 8px 12px; border-radius: 6px; border: none; background: var(--primary); color: white; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .btn-tool.active { background: var(--blue); border: 2px solid white; transform: scale(1.05); }
+        
+        /* Animation des cartes */
+        #gameBoard { position: relative; }
+        .player-card { 
+            background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 8px solid var(--gray); 
+            position: relative; transition: border-color 0.3s, background 0.3s;
+            will-change: transform;
+        }
         .player-card.ready { border-left-color: var(--winner); background: #f0fff4; }
+        
         .btn-delete { position: absolute; left: -8px; top: -8px; background: var(--accent); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 5; }
-        .rank-badge { position: absolute; left: 20px; top: -10px; padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; color: white; background: #95a5a6; }
-        .rank-1 { background: var(--gold); color: #000; }
+        
+        .rank-badge { position: absolute; left: 20px; top: -10px; padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; color: white; background: #95a5a6; z-index: 4; }
+        .rank-1 { background: var(--gold); color: #000; box-shadow: 0 0 10px var(--gold); }
         .rank-2 { background: var(--silver); color: #000; }
         .rank-3 { background: var(--bronze); }
+
         .reorder-tools { position: absolute; right: 10px; top: -10px; display: flex; gap: 5px; }
         .btn-move { background: white; border: 1px solid var(--gray); border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; }
+
         .player-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 5px; }
         .score-total { font-size: 1.6rem; font-weight: 900; color: var(--accent); cursor: pointer; text-decoration: underline dotted; }
+        
         .numpad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
         .btn-val { padding: 10px 0; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9; font-weight: bold; font-size: 1rem; cursor: pointer; }
         .btn-val:disabled { opacity: 0.2; }
         .btn-bonus { background: #ffeaa7; }
         .btn-special { background: #fab1a0; }
+        
         .current-calc { background: rgba(0,0,0,0.03); padding: 8px; border-radius: 8px; text-align: center; margin: 8px 0; border: 1px dashed #ccc; min-height: 40px; }
         .calc-detail { color: #7f8c8d; font-size: 0.8rem; display: block; }
         .calc-result { font-weight: bold; color: var(--blue); font-size: 1.2rem; }
+        
         .btn-confirm { grid-column: span 4; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 5px; cursor: pointer; }
         .ready-msg { grid-column: span 4; color: var(--winner); font-weight: bold; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+
         .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; z-index: 100; }
         .btn-next-round { background: var(--winner); color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
         .btn-next-round:disabled { background: var(--gray); opacity: 0.5; }
+
         .history { font-size: 0.75rem; color: #95a5a6; margin-top: 8px; border-top: 1px solid #eee; padding-top: 4px; overflow-x: auto; white-space: nowrap; }
-        .modal { background: rgba(0,0,0,0.8); position: fixed; top:0; left:0; right:0; bottom:0; display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; text-align: center; }
+        
+        /* Modal et Canvas de feu */
+        .modal { background: rgba(0,0,0,0.85); position: fixed; top:0; left:0; right:0; bottom:0; display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; text-align: center; position: relative; z-index: 2001; }
+        #fireCanvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 2002; }
     </style>
 </head>
 <body>
+
+<canvas id="fireCanvas"></canvas>
 
 <div class="container">
     <div class="header-tools">
@@ -54,8 +77,8 @@
             <button id="btnAutoSort" class="btn-tool" onclick="toggleAutoSort()">Auto-Tri: OFF</button>
         </div>
         <div class="btn-group">
-            <button class="btn-tool" onclick="exportData()">Export</button>
-            <button class="btn-tool" onclick="importData()">Import</button>
+            <button class="btn-tool" onclick="exportData()">Exp</button>
+            <button class="btn-tool" onclick="importData()">Imp</button>
             <button class="btn-tool" style="background:var(--accent)" onclick="resetGame()">Reset</button>
         </div>
     </div>
@@ -68,54 +91,120 @@
 
 <div id="winModal" class="modal">
     <div class="modal-content">
-        <h2 id="winName">🏆 Gagnant !</h2>
-        <h1 id="winScore" style="color:var(--winner); font-size: 3rem;">0</h1>
-        <button class="btn-tool" style="padding:15px 30px; width:100%; font-size: 1rem; background: var(--winner);" onclick="resetGame()">Nouvelle Partie</button>
+        <h2 id="winName" style="font-size: 2rem; margin: 0;">🏆</h2>
+        <h1 id="winScore" style="color:var(--winner); font-size: 3.5rem; margin: 10px 0;">0</h1>
+        <p style="margin-bottom: 20px; font-weight: bold;">VICTOIRE GGWP !</p>
+        <button class="btn-tool" style="padding:15px 30px; width:100%; font-size: 1.2rem; background: var(--winner);" onclick="resetGame()">Nouvelle Partie</button>
     </div>
 </div>
 
 <script>
-    let players = JSON.parse(localStorage.getItem('flip7_v19')) || [];
+    let players = JSON.parse(localStorage.getItem('flip7_v20')) || [];
     let autoSort = JSON.parse(localStorage.getItem('flip7_autosort')) || false;
     let currentTurnData = {}; 
 
     function save() { 
-        localStorage.setItem('flip7_v19', JSON.stringify(players));
+        localStorage.setItem('flip7_v20', JSON.stringify(players));
         localStorage.setItem('flip7_autosort', JSON.stringify(autoSort));
     }
 
-    // NOUVELLE LOGIQUE EXPORT / IMPORT (ANTI-BUG ACCENTS)
+    // --- LOGIQUE ANIMATION REORDONNANCEMENT (FLIP) ---
+    function animateRender() {
+        const board = document.getElementById('gameBoard');
+        const cards = Array.from(board.querySelectorAll('.player-card'));
+        const firstPositions = cards.map(card => {
+            const rect = card.getBoundingClientRect();
+            return { id: card.dataset.id, top: rect.top };
+        });
+
+        render(); // On met à jour le DOM
+
+        const newCards = Array.from(board.querySelectorAll('.player-card'));
+        newCards.forEach(card => {
+            const first = firstPositions.find(p => p.id === card.dataset.id);
+            if (first) {
+                const last = card.getBoundingClientRect().top;
+                const delta = first.top - last;
+                if (delta !== 0) {
+                    card.style.transition = 'none';
+                    card.style.transform = `translateY(${delta}px)`;
+                    requestAnimationFrame(() => {
+                        card.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                        card.style.transform = '';
+                    });
+                }
+            }
+        });
+    }
+
+    // --- MOTEUR DE FEU (PARTICULES) ---
+    const canvas = document.getElementById('fireCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let fireInterval;
+
+    function triggerFireExplosion() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particles = [];
+        
+        for(let i = 0; i < 150; i++) {
+            particles.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2 - 50,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15 - 5,
+                size: Math.random() * 8 + 2,
+                color: `rgb(255, ${Math.floor(Math.random() * 150)}, 0)`,
+                life: 1,
+                decay: Math.random() * 0.02 + 0.01
+            });
+        }
+
+        if (fireInterval) cancelAnimationFrame(fireInterval);
+        animateFire();
+    }
+
+    function animateFire() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach((p, i) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.1; // Gravité
+            p.life -= p.decay;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            if (p.life <= 0) particles.splice(i, 1);
+        });
+        if (particles.length > 0) fireInterval = requestAnimationFrame(animateFire);
+    }
+
+    // --- LOGIQUE JEU ---
     function exportData() {
-        if (players.length === 0) return alert("Rien à exporter");
         const json = JSON.stringify(players);
-        // On encode en UTF-8 pour supporter les accents avant le b64
         const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-        prompt("Code de sauvegarde (Accents inclus) :", b64);
+        prompt("Sauvegarde :", b64);
     }
 
     function importData() {
-        const b64 = prompt("Collez votre code de sauvegarde :");
+        const b64 = prompt("Code :");
         if (!b64) return;
         try {
-            // Décodage inverse de l'UTF-8
             const json = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-            const data = JSON.parse(json);
-            if (Array.isArray(data)) {
-                players = data;
-                save(); render();
-                alert("Import réussi !");
-            }
-        } catch (e) {
-            alert("Erreur : Le code est invalide ou contient des caractères non supportés.");
-        }
+            players = JSON.parse(json);
+            save(); animateRender();
+        } catch (e) { alert("Erreur code"); }
     }
 
     function addPlayer() {
-        const name = prompt("Nom du joueur :");
+        const name = prompt("Nom :");
         if(name) {
-            const id = Date.now();
+            const id = "p" + Date.now();
             players.push({ id, name, scores: [], total: 0 });
-            initPlayerData(id); save(); render();
+            initPlayerData(id); save(); animateRender();
         }
     }
 
@@ -123,36 +212,32 @@
         currentTurnData[id] = { cardsSum: 0, bonusSum: 0, multiplier: 1, selected: [], history: {cards:[], bonuses:[]}, isReady: false };
     }
 
-    function toggleAutoSort() { autoSort = !autoSort; save(); render(); }
+    function toggleAutoSort() { autoSort = !autoSort; save(); animateRender(); }
 
     function movePlayer(index, direction) {
         if (autoSort) return;
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < players.length) {
             [players[index], players[newIndex]] = [players[newIndex], players[index]];
-            save(); render();
+            save(); animateRender();
         }
     }
 
     function deletePlayer(id) {
-        if(confirm("Supprimer ce joueur ?")) {
+        if(confirm("Supprimer ?")) {
             players = players.filter(p => p.id !== id);
-            delete currentTurnData[id];
-            save(); render();
+            save(); animateRender();
         }
     }
 
     function editTotal(id) {
         const p = players.find(x => x.id === id);
-        const input = prompt(`Modifier le score total de ${p.name} :`, p.total);
+        const input = prompt(`Score total ${p.name} :`, p.total);
         if(input !== null) {
             const newTotal = parseInt(input) || 0;
-            const adjustment = newTotal - p.total;
-            if (adjustment !== 0) {
-                p.scores.push(adjustment);
-                p.total = newTotal;
-                save(); render();
-            }
+            p.scores.push(newTotal - p.total);
+            p.total = newTotal;
+            save(); animateRender();
         }
     }
 
@@ -177,7 +262,7 @@
             p.total = p.scores.reduce((a,b) => a+b, 0);
             initPlayerData(p.id);
         });
-        save(); render(); checkWin();
+        save(); animateRender(); checkWin();
     }
 
     function checkWin() {
@@ -185,20 +270,21 @@
         if (winners.length > 0) {
             const winner = [...winners].sort((a,b) => b.total - a.total)[0];
             document.getElementById('winName').innerText = "🏆 " + winner.name;
-            document.getElementById('winScore').innerText = winner.total + " pts";
+            document.getElementById('winScore').innerText = winner.total;
             document.getElementById('winModal').style.display = 'flex';
+            triggerFireExplosion();
         }
     }
 
     function resetGame() {
-        if(confirm("Réinitialiser les scores ?")) {
+        if(confirm("Reset ?")) {
             players.forEach(p => { p.scores = []; p.total = 0; initPlayerData(p.id); });
-            save(); document.getElementById('winModal').style.display = 'none'; render();
+            save(); document.getElementById('winModal').style.display = 'none'; animateRender();
+            ctx.clearRect(0,0, canvas.width, canvas.height);
         }
     }
 
     function getRank(player) {
-        if (players.length === 0) return 0;
         const sortedTotals = [...new Set(players.map(p => p.total))].sort((a,b) => b - a);
         return sortedTotals.indexOf(player.total) + 1;
     }
@@ -222,27 +308,23 @@
 
             const card = document.createElement('div');
             card.className = `player-card ${d.isReady ? 'ready' : ''}`;
+            card.dataset.id = p.id;
             card.innerHTML = `
-                <button class="btn-delete" onclick="deletePlayer(${p.id})">✕</button>
+                <button class="btn-delete" onclick="deletePlayer('${p.id}')">✕</button>
                 <div class="rank-badge rank-${rank}">${rank}${rank === 1 ? 'er' : 'e'}</div>
-                ${!autoSort ? `
-                    <div class="reorder-tools">
-                        <button class="btn-move" onclick="movePlayer(${players.indexOf(p)}, -1)">↑</button>
-                        <button class="btn-move" onclick="movePlayer(${players.indexOf(p)}, 1)">↓</button>
-                    </div>
-                ` : ''}
-                <div class="player-info"><strong>${p.name}</strong><div class="score-total" onclick="editTotal(${p.id})">${p.total}</div></div>
+                ${!autoSort ? `<div class="reorder-tools"><button class="btn-move" onclick="movePlayer(${players.indexOf(p)}, -1)">↑</button><button class="btn-move" onclick="movePlayer(${players.indexOf(p)}, 1)">↓</button></div>` : ''}
+                <div class="player-info"><strong>${p.name}</strong><div class="score-total" onclick="editTotal('${p.id}')">${p.total}</div></div>
                 ${!d.isReady ? `
                     <div class="current-calc"><span class="calc-detail">${detailStr || 'Saisie...'}</span><span class="calc-result">${detailStr ? '= ' + currentTotal : ''}</span></div>
                     <div class="numpad">
-                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val" id="c-${p.id}-${v}" onclick="addToTemp(${p.id},${v},'card','c-${p.id}-${v}')" ${d.selected.includes(`c-${p.id}-${v}`) || d.history.cards.length >= 7 ? 'disabled' : ''}>${v}</button>`).join('')}
-                        ${[2,4,6,8,10].map(v => `<button class="btn-val btn-bonus" id="b-${p.id}-${v}" onclick="addToTemp(${p.id},${v},'bonus_pts','b-${p.id}-${v}')" ${d.selected.includes(`b-${p.id}-${v}`) ? 'disabled' : ''}>+${v}</button>`).join('')}
-                        <button class="btn-val btn-bonus" id="m-${p.id}" onclick="addToTemp(${p.id},2,'multiplier','m-${p.id}')" ${d.selected.includes(`m-${p.id}`) ? 'disabled' : ''}>x2</button>
-                        <button class="btn-val btn-special" onclick="clearTemp(${p.id})">C</button>
-                        <button class="btn-confirm" onclick="setPlayerReady(${p.id}, true)">VALIDER (${currentTotal})</button>
+                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val" id="c-${p.id}-${v}" onclick="addToTemp('${p.id}',${v},'card','c-${p.id}-${v}')" ${d.selected.includes(`c-${p.id}-${v}`) || d.history.cards.length >= 7 ? 'disabled' : ''}>${v}</button>`).join('')}
+                        ${[2,4,6,8,10].map(v => `<button class="btn-val btn-bonus" id="b-${p.id}-${v}" onclick="addToTemp('${p.id}',${v},'bonus_pts','b-${p.id}-${v}')" ${d.selected.includes(`b-${p.id}-${v}`) ? 'disabled' : ''}>+${v}</button>`).join('')}
+                        <button class="btn-val btn-bonus" id="m-${p.id}" onclick="addToTemp('${p.id}',2,'multiplier','m-${p.id}')" ${d.selected.includes(`m-${p.id}`) ? 'disabled' : ''}>x2</button>
+                        <button class="btn-val btn-special" onclick="clearTemp('${p.id}')">C</button>
+                        <button class="btn-confirm" onclick="setPlayerReady('${p.id}', true)">PRÊT (${currentTotal})</button>
                     </div>
-                ` : `<div class="ready-msg"><span>Prêt : ${currentTotal}</span><button class="btn-tool" onclick="setPlayerReady(${p.id}, false)">Modifier</button></div>`}
-                <div class="history">Scores: ${p.scores.join(' | ') || 'vide'}</div>
+                ` : `<div class="ready-msg"><span>Confirmé : ${currentTotal}</span><button class="btn-tool" onclick="setPlayerReady('${p.id}', false)">Modifier</button></div>`}
+                <div class="history">Scores: ${p.scores.join(' | ') || '0'}</div>
             `;
             board.appendChild(card);
         });
