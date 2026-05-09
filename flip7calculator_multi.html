@@ -75,13 +75,13 @@
 </head>
 <body>
 
-<div id="statusToast">Lien copié !</div>
+<div id="statusToast">Lien copiÃ© !</div>
 
 <div id="setup">
     <div class="lobby-screen">
         <h1 style="font-size: 2.8rem; margin: 0 0 25px 0;">FLIP <span style="color:var(--accent)">7</span></h1>
         <input type="text" id="userName" placeholder="Ton Pseudo" style="width:100%; padding:18px; border-radius:15px; border:2px solid #eee; margin-bottom:15px; font-size:1.1rem; box-sizing:border-box; outline:none;">
-        <button class="btn-confirm" style="width:100%; margin-bottom:15px;" onclick="initRoom(true)">CRÉER UN SALON</button>
+        <button class="btn-confirm" style="width:100%; margin-bottom:15px;" onclick="initRoom(true)">CRÃ‰ER UN SALON</button>
         <div style="margin:10px; color:var(--gray); font-weight:bold; font-size:0.9rem;">OU REJOINDRE</div>
         <input type="text" id="roomCodeInput" placeholder="Code Salon" style="width:100%; padding:18px; border-radius:15px; border:2px solid #eee; margin-bottom:15px; font-size:1.1rem; box-sizing:border-box; outline:none; text-transform:uppercase;">
         <button class="btn-confirm" style="width:100%; background:var(--blue); box-shadow: 0 6px 0 #2980b9;" onclick="initRoom(false)">REJOINDRE</button>
@@ -92,7 +92,7 @@
     <div class="header-tools">
         <button id="btnExit" class="btn-exit-top" onclick="exitGame()">QUITTER</button>
         <div class="status-pill">
-            <div class="status-info"><span id="statusDot" class="dot dot-green"></span><span id="statusLabel">Connecté</span></div>
+            <div class="status-info"><span id="statusDot" class="dot dot-green"></span><span id="statusLabel">ConnectÃ©</span></div>
             <div id="pingDisplay" class="ping-val">-- ms</div>
         </div>
         <button id="btnShare" class="btn-share-top" onclick="copyGameLink()"> ID</button>
@@ -142,7 +142,7 @@
             addOrUpdatePlayer(session.uuid, session.name, null);
             hasReceivedFirstState = true; 
             render();
-            document.getElementById('pingDisplay').innerText = "HÔTE";
+            document.getElementById('pingDisplay').innerText = "HÃ”TE";
         } else {
             addOrUpdatePlayer(session.uuid, session.name, null);
             hasReceivedFirstState = true;
@@ -162,7 +162,7 @@
 
     function exitGame() {
         if(amIHost) {
-            if(confirm("Fermer le salon ? La partie sera supprimée pour tous les joueurs.")) {
+            if(confirm("Fermer le salon ? La partie sera supprimÃ©e pour tous les joueurs.")) {
                 connections.forEach(c => { if(c.open) c.send({type: 'ROOM_CLOSED'}); });
                 localStorage.removeItem(STORAGE_STATE);
                 session.lastRoom = '';
@@ -192,7 +192,7 @@
         peer = new Peer(id);
         peer.on('open', () => { if(!amIHost) connectToHost(); });
         peer.on('connection', c => setupHostEvents(c));
-        peer.on('error', e => { if(e.type === 'id-taken' && amIHost) { alert("Code déjà utilisé."); location.reload(); } });
+        peer.on('error', e => { if(e.type === 'id-taken' && amIHost) { alert("Code dÃ©jÃ  utilisÃ©."); location.reload(); } });
     }
 
     function connectToHost() {
@@ -220,7 +220,7 @@
         c.on('data', data => { 
             if(data.type === 'PONG') updatePingUI(Date.now() - pingStart);
             if(data.type === 'STATE') { gameState = data.s; hasReceivedFirstState = true; render(); } 
-            if(data.type === 'ROOM_CLOSED') { alert("Salon fermé."); location.reload(); }
+            if(data.type === 'ROOM_CLOSED') { alert("Salon fermÃ©."); location.reload(); }
             if(data.type === 'KICKED') { alert("Exclu."); location.reload(); }
         });
         c.on('close', () => { updateUIStatus('error'); setTimeout(connectToHost, 2000); });
@@ -305,7 +305,7 @@
                     </div>
                 ` : p.isReady ? `
                     <div style="text-align:center;">
-                        <div style="margin-top:10px; font-weight:bold; color:var(--winner);"> PRÊT</div>
+                        <div style="margin-top:10px; font-weight:bold; color:var(--winner);"> PRÃŠT</div>
                         ${isMe ? `<button class="btn-edit" onclick="sendUp(false)"> MODIFIER</button>` : ''}
                     </div>
                 ` : ''}
@@ -368,9 +368,9 @@
         const l = document.getElementById('statusLabel');
         const d = document.getElementById('statusDot');
         if(s === 'error') {
-            l.innerText = "Déconnecté"; d.className = "dot dot-red";
+            l.innerText = "DÃ©connectÃ©"; d.className = "dot dot-red";
             document.getElementById('pingDisplay').innerText = "!!!";
-        } else l.innerText = "Connecté";
+        } else l.innerText = "ConnectÃ©";
     }
 
     function copyGameLink() {
