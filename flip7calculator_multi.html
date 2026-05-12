@@ -96,7 +96,7 @@
 </head>
 <body>
 
-<div id="statusToast">Lien copiÃ© !</div>
+<div id="statusToast">Lien copié !</div>
 
 <div id="splash" class="hidden">
     <span class="loader"></span>
@@ -129,7 +129,7 @@
             <div style="flex:1; height:2px; background:#eee;"></div>
         </div>
 
-        <button class="btn-confirm" style="background:var(--primary); box-shadow: 0 6px 0 #1a252f; width: auto; padding: 15px 40px; font-size: 0.9rem;" onclick="initRoom(true)">CRÃER UN SALON</button>
+        <button class="btn-confirm" style="background:var(--primary); box-shadow: 0 6px 0 #1a252f; width: auto; padding: 15px 40px; font-size: 0.9rem;" onclick="initRoom(true)">CRÉER UN SALON</button>
     </div>
 </div>
 
@@ -140,7 +140,7 @@
             <span id="statusDot" class="dot dot-orange"></span>
             <span id="statusLabel">Initialisation</span>
         </div>
-        <button id="btnShare" class="btn-share-top" onclick="copyGameLink()">ð ID</button>
+        <button id="btnShare" class="btn-share-top" onclick="copyGameLink()">🔗 ID</button>
     </div>
     <div id="gameBoard"></div>
 </div>
@@ -266,7 +266,7 @@
         }
         document.getElementById('setup').classList.add('hidden');
         document.getElementById('game').classList.remove('hidden');
-        document.getElementById('btnShare').innerText = "ð " + roomCode;
+        document.getElementById('btnShare').innerText = "🔗 " + roomCode;
 
         if(amIHost) {
             document.body.classList.add('is-host-view');
@@ -320,7 +320,7 @@
             if(data.type === 'PONG') { failStart = null; updateUIStatus('ok', Date.now() - pingStart); }
             if(data.type === 'STATE') { 
                 if(!hasReceivedFirstState) { document.getElementById('splash').classList.add('hidden'); hasReceivedFirstState = true; }
-                // Si la victoire est terminÃ©e cÃ´tÃ© serveur mais qu'on a encore la modale ouverte, on la ferme
+                // Si la victoire est terminée côté serveur mais qu'on a encore la modale ouverte, on la ferme
                 if(!data.s.victory && activeModal && activeModal.innerHTML.includes("Victoire")) {
                     activeModal.remove(); activeModal = null;
                 }
@@ -328,7 +328,7 @@
                 gameState = data.s; render(oldPlayers); checkVictory();
             } 
             if(data.type === 'ROOM_CLOSED') location.replace(window.location.pathname);
-            if(data.type === 'KICKED') showModal("Vous avez Ã©tÃ© exclu.", [{label:"OK", color:"var(--red)", action:()=>location.reload()}]);
+            if(data.type === 'KICKED') showModal("Vous avez été exclu.", [{label:"OK", color:"var(--red)", action:()=>location.reload()}]);
         });
         c.on('close', () => handleReconnection());
     }
@@ -337,9 +337,9 @@
 
     function updateUIStatus(s, ms) {
         const l = document.getElementById('statusLabel'), d = document.getElementById('statusDot');
-        if(s === 'dead') { l.innerText = "DÃ©connectÃ©"; d.className = "dot dot-red"; }
+        if(s === 'dead') { l.innerText = "Déconnecté"; d.className = "dot dot-red"; }
         else if(s === 'recon') { l.innerText = "Reconnexion..."; d.className = "dot dot-orange"; }
-        else { l.innerText = amIHost ? "HÃ´te (ConnectÃ©)" : (ms ? `ConnectÃ© (${ms}ms)` : "ConnectÃ©"); d.className = "dot dot-green"; }
+        else { l.innerText = amIHost ? "Hôte (Connecté)" : (ms ? `Connecté (${ms}ms)` : "Connecté"); d.className = "dot dot-green"; }
     }
 
     function addOrUpdatePlayer(uuid, name, peerId) {
@@ -377,8 +377,8 @@
                     <div style="font-weight:900; font-size:1.1rem; display:flex; align-items:center;">
                         <span class="rank-badge ${idx===0 && p.total>0?'rank-1':''}">${p.total>0?`#${idx+1}`:`#--`}</span>
                         ${p.name}
-                        <button class="btn-hist" title="Historique" onclick="showHistory('${p.uuid}')">ð</button>
-                        ${amIHost && !isMe ? `<button class="btn-kick" title="Exclure" onclick="confirmKick('${p.uuid}', '${p.name}')">â</button>` : ''}
+                        <button class="btn-hist" title="Historique" onclick="showHistory('${p.uuid}')">📜</button>
+                        ${amIHost && !isMe ? `<button class="btn-kick" title="Exclure" onclick="confirmKick('${p.uuid}', '${p.name}')">✕</button>` : ''}
                     </div>
                     <div id="${scoreId}" class="score-val" onclick="manualEdit('${p.uuid}')">${p.total}</div>
                 </div>
@@ -397,7 +397,7 @@
                         <button class="btn-val" style="background:#fff0f0" onclick="handleIn(0,'clear')">C</button>
                         <button class="btn-confirm" style="grid-column:span 4; margin-top:5px;" onclick="sendUp(true)">VALIDER</button>
                     </div>
-                ` : p.isReady ? `<div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--winner);">â PRÃT ${isMe?`<br><button class="btn-exit-top" style="background:var(--orange); color:white; margin-top:5px; border-radius:12px; padding:5px 15px;" onclick="sendUp(false)">MODIFIER</button>`:''}</div>` : ''}
+                ` : p.isReady ? `<div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--winner);">✓ PRÊT ${isMe?`<br><button class="btn-exit-top" style="background:var(--orange); color:white; margin-top:5px; border-radius:12px; padding:5px 15px;" onclick="sendUp(false)">MODIFIER</button>`:''}</div>` : ''}
             `;
             board.appendChild(card);
             if(oldP && oldP.total !== p.total) animateScore(scoreId, oldP.total, p.total);
@@ -437,12 +437,12 @@
     function checkVictory() {
         if(!gameState.victory || (activeModal && activeModal.innerHTML.includes("Victoire"))) return;
         const winner = [...gameState.players].sort((a,b)=>b.total-a.total)[0];
-        showModal(`ð Victoire de ${winner.name} !`, amIHost ? [{ label: "Nouvelle Partie", color: "var(--blue)", action: () => restartGame() }, { label: "Quitter", color: "var(--red)", action: () => exitGame() }] : [{ label: "Quitter le salon", color: "var(--red)", action: () => exitGame() }]);
+        showModal(`🏆 Victoire de ${winner.name} !`, amIHost ? [{ label: "Nouvelle Partie", color: "var(--blue)", action: () => restartGame() }, { label: "Quitter", color: "var(--red)", action: () => exitGame() }] : [{ label: "Quitter le salon", color: "var(--red)", action: () => exitGame() }]);
     }
 
     function restartGame() {
         gameState.victory = false;
-        // On nettoie la liste des joueurs pour ne garder que ceux dont la connexion Peer est encore active ou l'hÃ´te
+        // On nettoie la liste des joueurs pour ne garder que ceux dont la connexion Peer est encore active ou l'hôte
         if(amIHost) {
             gameState.players = gameState.players.filter(p => {
                 if(p.uuid === session.uuid) return true;
