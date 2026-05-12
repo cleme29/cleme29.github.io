@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flip 7 - V36.0</title>
+    <title>Flip 7 - V40.0</title>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -39,13 +39,24 @@
 
         .btn-share-top { justify-self: end; background: #f1f5f9; border: none; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; color: var(--primary); cursor: pointer; }
 
-        .player-card { background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); position: relative; border: 2px solid transparent; transition: all 0.3s ease; }
+        .player-card { 
+            background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 15px; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05); position: relative; border: 2px solid transparent; 
+            transition: all 0.3s ease;
+        }
         .player-card.is-me { border-color: var(--blue); }
         .player-card.ready { border-color: var(--winner); background: #f0fff4; }
         
-        /* Icone Kick Stylisé */
-        .btn-kick { background: #ff4757; color: white; border: none; border-radius: 8px; width: 24px; height: 24px; cursor: pointer; margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; transition: 0.2s; vertical-align: middle; }
-        .btn-kick:hover { background: #ff6b81; transform: scale(1.1); }
+        .rank-badge {
+            background: #f1f5f9; color: var(--primary); font-size: 0.75rem; font-weight: 900;
+            padding: 3px 8px; border-radius: 8px; margin-right: 10px; display: inline-block;
+            border: 1px solid #e2e8f0; vertical-align: middle;
+        }
+        .rank-1 { background: #fff9db; color: #fab005; border-color: #ffe066; }
+
+        .btn-kick, .btn-hist { background: #eee; color: #666; border: none; border-radius: 8px; width: 28px; height: 28px; cursor: pointer; margin-left: 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; vertical-align: middle; }
+        .btn-kick { background: #fee2e2; color: #ef4444; }
+        .btn-kick:hover { transform: scale(1.1); }
 
         .score-val { font-size: 2.2rem; font-weight: 900; color: var(--accent); }
         .is-host-view .score-val { border-bottom: 3px dotted var(--gray); cursor: pointer; }
@@ -64,7 +75,7 @@
         .btn-mult.active { background: var(--purple); color: white; box-shadow: 0 4px 0 #7b1fa2; }
         
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index: 10000; padding: 20px; backdrop-filter: blur(4px); }
-        .modal-box { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-box { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 320px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 80vh; overflow-y: auto; }
         @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-box input { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #eee; margin: 10px 0; font-size: 1.2rem; text-align: center; box-sizing: border-box; }
         
@@ -77,11 +88,15 @@
         #statusToast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); padding: 10px 25px; border-radius: 50px; background: var(--primary); color: white; z-index: 20000; transition: 0.5s; pointer-events: none; }
         #statusToast.show { top: 20px; }
         .hidden { display: none !important; }
+
+        .hist-item { padding: 12px 0; border-bottom: 1px solid #eee; }
+        .hist-row { display: flex; justify-content: space-between; font-weight: 900; margin-bottom: 2px; }
+        .hist-detail { font-family: monospace; font-size: 0.7rem; color: var(--gray); font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="statusToast">Lien copié !</div>
+<div id="statusToast">Lien copiÃ© !</div>
 
 <div id="splash" class="hidden">
     <span class="loader"></span>
@@ -97,6 +112,11 @@
             <input type="text" id="userName" class="main-input" placeholder="Pseudo">
         </div>
 
+        <div id="resumeCard" class="setup-card hidden" style="border: 4px solid var(--winner);">
+            <h2>PARTIE EN COURS</h2>
+            <button class="btn-confirm" onclick="resumeHostSession()">REPRENDRE LA PARTIE</button>
+        </div>
+
         <div class="setup-card" style="border: 4px solid var(--blue);">
             <h2>REJOINDRE</h2>
             <input type="text" id="roomCodeInput" class="main-input" style="text-transform: uppercase; margin-bottom: 15px; font-weight: 900;" placeholder="CODE SALON">
@@ -109,7 +129,7 @@
             <div style="flex:1; height:2px; background:#eee;"></div>
         </div>
 
-        <button class="btn-confirm" style="background:var(--primary); box-shadow: 0 6px 0 #1a252f; width: auto; padding: 15px 40px; font-size: 0.9rem;" onclick="initRoom(true)">CRÉER UN SALON</button>
+        <button class="btn-confirm" style="background:var(--primary); box-shadow: 0 6px 0 #1a252f; width: auto; padding: 15px 40px; font-size: 0.9rem;" onclick="initRoom(true)">CRÃER UN SALON</button>
     </div>
 </div>
 
@@ -120,7 +140,7 @@
             <span id="statusDot" class="dot dot-orange"></span>
             <span id="statusLabel">Initialisation</span>
         </div>
-        <button id="btnShare" class="btn-share-top" onclick="copyGameLink()">🔗 ID</button>
+        <button id="btnShare" class="btn-share-top" onclick="copyGameLink()">ð ID</button>
     </div>
     <div id="gameBoard"></div>
 </div>
@@ -130,7 +150,8 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'FLIP7_V36_SESS';
+    const STORAGE_KEY = 'FLIP7_V40_SESS';
+    const RECOVERY_KEY = 'FLIP7_V40_RECOVERY';
     const ROOM_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ2346789';
     
     let session = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { uuid: crypto.randomUUID(), name: '' };
@@ -143,17 +164,25 @@
     let failStart = null;
     let isReconnecting = false;
 
+    const peerConfig = {
+        config: {
+            'iceServers': [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun.cloudflare.com:3478' }
+            ]
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         if(urlParams.has('room')) document.getElementById('roomCodeInput').value = urlParams.get('room').toUpperCase();
         if(session.name) document.getElementById('userName').value = session.name;
+        
+        const recovery = JSON.parse(localStorage.getItem(RECOVERY_KEY));
+        if(recovery && recovery.roomCode) document.getElementById('resumeCard').classList.remove('hidden');
     });
-
-    function generateRoomCode() {
-        let code = '';
-        for(let i=0; i<5; i++) code += ROOM_CHARSET.charAt(Math.floor(Math.random() * ROOM_CHARSET.length));
-        return code;
-    }
 
     function showModal(msg, buttons = [{ label: "OK", color: "var(--winner)", action: null }]) {
         if(activeModal) activeModal.remove();
@@ -183,86 +212,89 @@
             </div>
         `;
         document.body.appendChild(overlay);
-        document.getElementById('promptOk').onclick = () => { 
-            const val = document.getElementById('promptInput').value;
-            overlay.remove(); activeModal = null; callback(val);
-        };
+        document.getElementById('promptOk').onclick = () => { const val = document.getElementById('promptInput').value; overlay.remove(); activeModal = null; callback(val); };
         document.getElementById('promptCancel').onclick = () => { overlay.remove(); activeModal = null; };
         activeModal = overlay;
     }
 
-    function initRoom(isHost) {
+    function showHistory(playerUuid) {
+        const p = gameState.players.find(x => x.uuid === playerUuid);
+        if(!p || !p.history || p.history.length === 0) { showModal("Aucun historique pour le moment."); return; }
+        let html = `<div style="text-align:left; margin-bottom:20px;">`;
+        p.history.forEach((h, i) => {
+            html += `
+                <div class="hist-item">
+                    <div class="hist-row"><span>Manche ${i+1}</span><span style="color:var(--accent)">+ ${h.pts} pts</span></div>
+                    <div class="hist-detail">${h.detail}</div>
+                </div>`;
+        });
+        html += `</div>`;
+        showModal(`Historique : ${p.name}${html}`, [{label: "Fermer", color: "var(--primary)", action: null}]);
+    }
+
+    function animateScore(id, start, end) {
+        const el = document.getElementById(id);
+        if(!el) return;
+        let current = start;
+        const range = end - start, duration = 1000;
+        let startTime = null;
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            el.innerText = Math.floor(progress * range + start);
+            if (progress < 1) window.requestAnimationFrame(step);
+        }
+        window.requestAnimationFrame(step);
+    }
+
+    function resumeHostSession() {
+        const recovery = JSON.parse(localStorage.getItem(RECOVERY_KEY));
+        if(!recovery) return;
+        roomCode = recovery.roomCode; gameState = recovery.gameState; initRoom(true, true);
+    }
+
+    function initRoom(isHost, isResuming = false) {
         session.name = document.getElementById('userName').value.trim();
         if(!session.name) return;
         amIHost = isHost;
-        roomCode = isHost ? generateRoomCode() : document.getElementById('roomCodeInput').value.trim().toUpperCase();
+        if(!isResuming) roomCode = isHost ? generateRoomCode() : document.getElementById('roomCodeInput').value.trim().toUpperCase();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 
         if(!amIHost) {
             document.getElementById('splash').classList.remove('hidden');
             document.getElementById('splashText').innerText = "Connexion au salon " + roomCode + "...";
         }
-
         document.getElementById('setup').classList.add('hidden');
         document.getElementById('game').classList.remove('hidden');
-        document.getElementById('btnShare').innerText = "🔗 " + roomCode;
+        document.getElementById('btnShare').innerText = "ð " + roomCode;
 
         if(amIHost) {
             document.body.classList.add('is-host-view');
             document.getElementById('footerHost').classList.remove('hidden');
-            addOrUpdatePlayer(session.uuid, session.name, null);
-            hasReceivedFirstState = true; 
-            updateUIStatus('ok');
-            render();
-        } else {
-            setInterval(sendPing, 3000);
-        }
+            if(!isResuming) addOrUpdatePlayer(session.uuid, session.name, null);
+            hasReceivedFirstState = true; updateUIStatus('ok'); render(); saveRecoveryData();
+        } else { setInterval(sendPing, 3000); }
         startPeer(isHost ? 'F7-' + roomCode : null);
     }
 
-    function startPeer(id) {
-        peer = new Peer(id, { config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] } });
-        
-        peer.on('open', () => { 
-            failStart = null;
-            updateUIStatus('ok');
-            if(!amIHost) connectToHost(); else broadcast(); 
-        });
+    function saveRecoveryData() { if(amIHost) localStorage.setItem(RECOVERY_KEY, JSON.stringify({ roomCode, gameState })); }
 
+    function startPeer(id) {
+        peer = new Peer(id, peerConfig);
+        peer.on('open', () => { failStart = null; updateUIStatus('ok'); if(!amIHost) connectToHost(); else broadcast(); });
         peer.on('disconnected', () => handleReconnection());
-        peer.on('error', e => {
-            if(e.type === 'id-taken' && amIHost) showModal("Code salon déjà utilisé.", [{label:"OK", color:"var(--blue)", action:()=>location.reload()}]);
-            else handleReconnection();
-        });
-        
+        peer.on('error', e => { if(e.type === 'id-taken' && amIHost) location.reload(); else handleReconnection(); });
         peer.on('connection', c => setupHostEvents(c));
     }
 
-    function connectToHost() {
-        if(conn) conn.close();
-        conn = peer.connect('F7-' + roomCode, { reliable: true });
-        setupClientEvents(conn);
-    }
+    function connectToHost() { if(conn) conn.close(); conn = peer.connect('F7-' + roomCode, { reliable: true }); setupClientEvents(conn); }
 
     function handleReconnection() {
         if(isReconnecting) return;
-        isReconnecting = true;
-        if(!failStart) failStart = Date.now();
-
-        if(Date.now() - failStart > 600000) {
-            updateUIStatus('dead');
-            setTimeout(() => location.replace(window.location.pathname), 60000);
-            return;
-        }
-
+        isReconnecting = true; if(!failStart) failStart = Date.now();
+        if(Date.now() - failStart > 600000) { location.replace(window.location.pathname); return; }
         updateUIStatus('recon');
-        setTimeout(() => {
-            isReconnecting = false;
-            if (peer && !peer.destroyed) {
-                if (peer.disconnected) peer.reconnect();
-                if (!amIHost) connectToHost();
-            }
-        }, 2000);
+        setTimeout(() => { isReconnecting = false; if (peer && !peer.destroyed) { if (peer.disconnected) peer.reconnect(); if (!amIHost) connectToHost(); } }, 2000);
     }
 
     function setupHostEvents(c) {
@@ -270,41 +302,33 @@
             if(data.type === 'PING') c.send({type: 'PONG'});
             if(data.type === 'JOIN') {
                 addOrUpdatePlayer(data.uuid, data.name, c.peer);
+                connections = connections.filter(cx => cx.peer !== c.peer); connections.push(c);
+                c.send({type:'STATE', s:gameState}); broadcast(); render();
+            }
+            if(data.type === 'LEAVE') { 
+                gameState.players = gameState.players.filter(p => p.uuid !== data.uuid); 
                 connections = connections.filter(cx => cx.peer !== c.peer);
-                connections.push(c);
-                c.send({type:'STATE', s:gameState});
-                broadcast(); render();
+                broadcast(); render(); 
             }
-            if(data.type === 'LEAVE') {
-                gameState.players = gameState.players.filter(p => p.uuid !== data.uuid);
-                broadcast(); render();
-            }
-            if(data.type === 'UPDATE') {
-                let p = gameState.players.find(x => x.uuid === data.uuid);
-                if(p) { p.currentTurn = data.ct; p.isReady = data.ready; render(); broadcast(); }
-            }
+            if(data.type === 'UPDATE') { let p = gameState.players.find(x => x.uuid === data.uuid); if(p) { p.currentTurn = data.ct; p.isReady = data.ready; render(); broadcast(); } }
         });
     }
 
     function setupClientEvents(c) {
-        c.on('open', () => { 
-            failStart = null;
-            updateUIStatus('ok');
-            c.send({type:'JOIN', name:session.name, uuid:session.uuid}); 
-        });
+        c.on('open', () => { failStart = null; updateUIStatus('ok'); c.send({type:'JOIN', name:session.name, uuid:session.uuid}); });
         c.on('data', data => { 
             if(data.type === 'PONG') { failStart = null; updateUIStatus('ok', Date.now() - pingStart); }
             if(data.type === 'STATE') { 
                 if(!hasReceivedFirstState) { document.getElementById('splash').classList.add('hidden'); hasReceivedFirstState = true; }
-                gameState = data.s; 
-                if(!gameState.victory && activeModal && activeModal.innerHTML.includes("Victoire")) { 
-                    activeModal.remove(); activeModal = null; 
+                // Si la victoire est terminÃ©e cÃ´tÃ© serveur mais qu'on a encore la modale ouverte, on la ferme
+                if(!data.s.victory && activeModal && activeModal.innerHTML.includes("Victoire")) {
+                    activeModal.remove(); activeModal = null;
                 }
-                render(); 
-                checkVictory();
+                const oldPlayers = JSON.parse(JSON.stringify(gameState.players));
+                gameState = data.s; render(oldPlayers); checkVictory();
             } 
-            if(data.type === 'ROOM_CLOSED') { location.replace(window.location.pathname); }
-            if(data.type === 'KICKED') { showModal("Vous avez été exclu.", [{label:"OK", color:"var(--red)", action:()=>location.reload()}]); }
+            if(data.type === 'ROOM_CLOSED') location.replace(window.location.pathname);
+            if(data.type === 'KICKED') showModal("Vous avez Ã©tÃ© exclu.", [{label:"OK", color:"var(--red)", action:()=>location.reload()}]);
         });
         c.on('close', () => handleReconnection());
     }
@@ -312,55 +336,51 @@
     function sendPing() { if(conn && conn.open) { pingStart = Date.now(); conn.send({type: 'PING'}); } }
 
     function updateUIStatus(s, ms) {
-        const l = document.getElementById('statusLabel');
-        const d = document.getElementById('statusDot');
-        if(s === 'dead') { l.innerText = "Déconnecté"; d.className = "dot dot-red"; }
+        const l = document.getElementById('statusLabel'), d = document.getElementById('statusDot');
+        if(s === 'dead') { l.innerText = "DÃ©connectÃ©"; d.className = "dot dot-red"; }
         else if(s === 'recon') { l.innerText = "Reconnexion..."; d.className = "dot dot-orange"; }
-        else {
-            if(amIHost) l.innerText = "Hôte (Connecté)";
-            else l.innerText = ms ? `Connecté (${ms}ms)` : "Connecté";
-            d.className = "dot dot-green";
-        }
+        else { l.innerText = amIHost ? "HÃ´te (ConnectÃ©)" : (ms ? `ConnectÃ© (${ms}ms)` : "ConnectÃ©"); d.className = "dot dot-green"; }
     }
 
     function addOrUpdatePlayer(uuid, name, peerId) {
         let p = gameState.players.find(x => x.uuid === uuid);
-        if(!p) gameState.players.push({ uuid, name, peerId, total: 0, isReady: false, currentTurn: { cards: [], bonuses: [], mult: 1 } });
+        if(!p) gameState.players.push({ uuid, name, peerId, total: 0, history: [], isReady: false, currentTurn: { cards: [], bonuses: [], mult: 1 } });
         else if(peerId) p.peerId = peerId;
     }
 
-    function broadcast() {
-        if(!amIHost) return;
-        connections = connections.filter(c => c.open);
-        connections.forEach(c => c.send({type:'STATE', s:gameState}));
-    }
+    function broadcast() { if(!amIHost) return; connections = connections.filter(c => c.open); connections.forEach(c => c.send({type:'STATE', s:gameState})); saveRecoveryData(); }
 
     function getCalc(ct) {
-        const sum = ct.cards.reduce((a,b)=>a+b,0);
-        const bonus7 = ct.cards.length >= 7 ? 15 : 0;
-        const bSum = ct.bonuses.reduce((a,b)=>a+b,0);
+        const sum = ct.cards.reduce((a,b)=>a+b,0), bonus7 = ct.cards.length >= 7 ? 15 : 0, bSum = ct.bonuses.reduce((a,b)=>a+b,0);
         const total = (sum * ct.mult) + bSum + bonus7;
         const detail = `(${sum} x${ct.mult})` + (bSum?` + ${bSum}`:'') + (bonus7?` + 15`:'');
         return { total, detail };
     }
 
-    function render() {
+    function render(oldPlayers = []) {
         if(!hasReceivedFirstState) return;
         const board = document.getElementById('gameBoard');
         board.innerHTML = '';
-        [...gameState.players].sort((a,b) => b.total - a.total).forEach((p, idx) => {
+        const sorted = [...gameState.players].sort((a,b) => b.total - a.total);
+        
+        sorted.forEach((p, idx) => {
             const isMe = p.uuid === session.uuid;
             const ct = p.currentTurn || { cards: [], bonuses: [], mult: 1 };
             const calc = getCalc(ct);
+            const oldP = oldPlayers.find(x => x.uuid === p.uuid);
+            const scoreId = `score-${p.uuid}`;
+            
             const card = document.createElement('div');
             card.className = `player-card ${p.isReady?'ready':''} ${isMe?'is-me':''}`;
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-weight:900; font-size:1.1rem; display:flex; align-items:center;">
-                        ${p.total>0?(idx===0?"🥇 ":idx===1?"🥈 ":idx===2?"🥉 ":""):""}${p.name}
-                        ${amIHost && !isMe ? `<button class="btn-kick" title="Exclure" onclick="confirmKick('${p.uuid}', '${p.name}')">✕</button>` : ''}
+                        <span class="rank-badge ${idx===0 && p.total>0?'rank-1':''}">${p.total>0?`#${idx+1}`:`#--`}</span>
+                        ${p.name}
+                        <button class="btn-hist" title="Historique" onclick="showHistory('${p.uuid}')">ð</button>
+                        ${amIHost && !isMe ? `<button class="btn-kick" title="Exclure" onclick="confirmKick('${p.uuid}', '${p.name}')">â</button>` : ''}
                     </div>
-                    <div class="score-val" onclick="manualEdit('${p.uuid}')">${p.total}</div>
+                    <div id="${scoreId}" class="score-val" onclick="manualEdit('${p.uuid}')">${p.total}</div>
                 </div>
                 <div class="calc-box">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -377,9 +397,10 @@
                         <button class="btn-val" style="background:#fff0f0" onclick="handleIn(0,'clear')">C</button>
                         <button class="btn-confirm" style="grid-column:span 4; margin-top:5px;" onclick="sendUp(true)">VALIDER</button>
                     </div>
-                ` : p.isReady ? `<div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--winner);">✓ PRÊT ${isMe?`<br><button class="btn-exit-top" style="background:var(--orange); color:white; margin-top:5px; border-radius:12px; padding:5px 15px;" onclick="sendUp(false)">MODIFIER</button>`:''}</div>` : ''}
+                ` : p.isReady ? `<div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--winner);">â PRÃT ${isMe?`<br><button class="btn-exit-top" style="background:var(--orange); color:white; margin-top:5px; border-radius:12px; padding:5px 15px;" onclick="sendUp(false)">MODIFIER</button>`:''}</div>` : ''}
             `;
             board.appendChild(card);
+            if(oldP && oldP.total !== p.total) animateScore(scoreId, oldP.total, p.total);
         });
         if(amIHost) document.getElementById('nextRoundBtn').disabled = !gameState.players.every(p => p.isReady);
     }
@@ -401,62 +422,63 @@
     }
 
     function hostFinishRound() {
-        gameState.players.forEach(p => { p.total += getCalc(p.currentTurn).total; p.isReady = false; p.currentTurn = { cards: [], bonuses: [], mult: 1 }; });
+        const oldState = JSON.parse(JSON.stringify(gameState.players));
+        gameState.players.forEach(p => { 
+            const calc = getCalc(p.currentTurn);
+            p.total += calc.total; 
+            if(!p.history) p.history = [];
+            p.history.push({ pts: calc.total, detail: calc.detail });
+            p.isReady = false; p.currentTurn = { cards: [], bonuses: [], mult: 1 }; 
+        });
         if(gameState.players.some(p => p.total >= 200)) gameState.victory = true;
-        broadcast(); render(); checkVictory();
+        broadcast(); render(oldState); checkVictory();
     }
 
     function checkVictory() {
         if(!gameState.victory || (activeModal && activeModal.innerHTML.includes("Victoire"))) return;
         const winner = [...gameState.players].sort((a,b)=>b.total-a.total)[0];
-        showModal(`🏆 Victoire de ${winner.name} !`, amIHost ? [
-            { label: "Nouvelle Partie", color: "var(--blue)", action: () => restartGame() },
-            { label: "Quitter", color: "var(--red)", action: () => exitGame() }
-        ] : [
-            { label: "Quitter le salon", color: "var(--red)", action: () => exitGame() }
-        ]);
+        showModal(`ð Victoire de ${winner.name} !`, amIHost ? [{ label: "Nouvelle Partie", color: "var(--blue)", action: () => restartGame() }, { label: "Quitter", color: "var(--red)", action: () => exitGame() }] : [{ label: "Quitter le salon", color: "var(--red)", action: () => exitGame() }]);
     }
 
     function restartGame() {
         gameState.victory = false;
-        gameState.players.forEach(p => { p.total = 0; p.isReady = false; p.currentTurn = { cards: [], bonuses: [], mult: 1 }; });
-        if(activeModal) { activeModal.remove(); activeModal = null; }
+        // On nettoie la liste des joueurs pour ne garder que ceux dont la connexion Peer est encore active ou l'hÃ´te
+        if(amIHost) {
+            gameState.players = gameState.players.filter(p => {
+                if(p.uuid === session.uuid) return true;
+                return connections.some(c => c.peer === p.peerId && c.open);
+            });
+        }
+        gameState.players.forEach(p => { p.total = 0; p.history = []; p.isReady = false; p.currentTurn = { cards: [], bonuses: [], mult: 1 }; });
         broadcast(); render();
     }
 
+    function generateRoomCode() { let code = ''; for(let i=0; i<5; i++) code += ROOM_CHARSET.charAt(Math.floor(Math.random() * ROOM_CHARSET.length)); return code; }
+
     function confirmKick(uuid, name) {
-        showModal(`Exclure ${name} ?`, [
-            { label: "OUI", color: "var(--red)", action: () => {
-                const p = gameState.players.find(x => x.uuid === uuid);
-                if(p?.peerId) { const c = connections.find(cx => cx.peer === p.peerId); if(c?.open) c.send({type: 'KICKED'}); }
-                gameState.players = gameState.players.filter(px => px.uuid !== uuid);
-                broadcast(); render();
-            }},
-            { label: "NON", color: "var(--gray)", action: null }
-        ]);
+        showModal(`Voulez-vous vraiment exclure ${name} ?`, [{ label: "OUI", color: "var(--red)", action: () => {
+            const p = gameState.players.find(x => x.uuid === uuid);
+            if(p?.peerId) { const c = connections.find(cx => cx.peer === p.peerId); if(c?.open) c.send({type: 'KICKED'}); }
+            gameState.players = gameState.players.filter(px => px.uuid !== uuid); broadcast(); render();
+        }}, { label: "NON", color: "var(--gray)", action: null }]);
     }
 
     function manualEdit(uuid) {
         if(!amIHost) return;
         const p = gameState.players.find(x => x.uuid === uuid);
-        showPromptModal("Score pour " + p.name, p.total, (newVal) => {
-            if(newVal !== "" && !isNaN(newVal)) { p.total = parseInt(newVal); render(); broadcast(); }
-        });
+        showPromptModal("Score pour " + p.name, p.total, (v) => { if(v !== "" && !isNaN(v)) { p.total = parseInt(v); render(); broadcast(); } });
     }
 
     function exitGame() {
-        showModal("Voulez-vous vraiment quitter la partie ?", [
-            { label: "QUITTER", color: "var(--red)", action: () => {
-                if(amIHost) {
-                    connections.forEach(c => { if(c.open) c.send({type: 'ROOM_CLOSED'}); });
-                    location.replace(window.location.pathname);
-                } else {
-                    if(conn && conn.open) conn.send({type: 'LEAVE', uuid: session.uuid});
-                    location.replace(window.location.pathname);
-                }
-            }},
-            { label: "RESTER", color: "var(--gray)", action: null }
-        ]);
+        showModal("Voulez-vous vraiment quitter la partie ?", [{ label: "QUITTER", color: "var(--red)", action: () => {
+            if(amIHost) { 
+                connections.forEach(c => { if(c.open) c.send({type: 'ROOM_CLOSED'}); }); 
+                localStorage.removeItem(RECOVERY_KEY); 
+            } else {
+                if(conn && conn.open) conn.send({type: 'LEAVE', uuid: session.uuid});
+            }
+            location.replace(window.location.pathname);
+        }}, { label: "RESTER", color: "var(--gray)", action: null }]);
     }
 
     function copyGameLink() {
