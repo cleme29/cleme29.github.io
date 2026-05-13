@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flip 7 - V40.0</title>
+    <title>Flip 7 - V42.0</title>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -39,6 +39,8 @@
 
         .btn-share-top { justify-self: end; background: #f1f5f9; border: none; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; color: var(--primary); cursor: pointer; }
 
+        .round-indicator { text-align: center; font-weight: 900; color: var(--gray); font-size: 1.1rem; margin-bottom: 15px; letter-spacing: 1px; }
+
         .player-card { 
             background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 15px; 
             box-shadow: 0 8px 15px rgba(0,0,0,0.05); position: relative; border: 2px solid transparent; 
@@ -60,6 +62,7 @@
 
         .score-val { font-size: 2.2rem; font-weight: 900; color: var(--accent); }
         .is-host-view .score-val { border-bottom: 3px dotted var(--gray); cursor: pointer; }
+        .score-preview { font-size: 1.2rem; color: var(--gray); opacity: 0.7; vertical-align: middle; margin-left: 5px; }
 
         .calc-box { margin-top: 12px; background: #f8f9fa; padding: 12px; border-radius: 15px; }
         .detail-text { font-family: monospace; font-size: 0.75rem; color: var(--gray); margin-top: 4px; font-weight: bold; }
@@ -142,6 +145,7 @@
         </div>
         <button id="btnShare" class="btn-share-top" onclick="copyGameLink()">🔗 ID</button>
     </div>
+    <div id="roundIndicator" class="round-indicator">MANCHE 1</div>
     <div id="gameBoard"></div>
 </div>
 
@@ -150,12 +154,12 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'FLIP7_V40_SESS';
-    const RECOVERY_KEY = 'FLIP7_V40_RECOVERY';
+    const STORAGE_KEY = 'FLIP7_V42_SESS';
+    const RECOVERY_KEY = 'FLIP7_V42_RECOVERY';
     const ROOM_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ2346789';
     
     let session = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { uuid: crypto.randomUUID(), name: '' };
-    let gameState = { players: [], victory: false };
+    let gameState = { players: [], victory: false, round: 1 };
     let peer, conn, connections = [], amIHost = false, roomCode = '';
     let hasReceivedFirstState = false;
     let pingStart = 0;
@@ -301,6 +305,10 @@
         c.on('data', data => {
             if(data.type === 'PING') c.send({type: 'PONG'});
             if(data.type === 'JOIN') {
+                if(gameState.players.some(p => p.name.toLowerCase() === data.name.toLowerCase() && p.uuid !== data.uuid)) {
+                    c.send({type: 'NAME_TAKEN'});
+                    return;
+                }
                 addOrUpdatePlayer(data.uuid, data.name, c.peer);
                 connections = connections.filter(cx => cx.peer !== c.peer); connections.push(c);
                 c.send({type:'STATE', s:gameState}); broadcast(); render();
@@ -318,9 +326,13 @@
         c.on('open', () => { failStart = null; updateUIStatus('ok'); c.send({type:'JOIN', name:session.name, uuid:session.uuid}); });
         c.on('data', data => { 
             if(data.type === 'PONG') { failStart = null; updateUIStatus('ok', Date.now() - pingStart); }
+            if(data.type === 'NAME_TAKEN') { 
+                document.getElementById('splash').classList.add('hidden');
+                showModal("Ce pseudo est déjà pris dans ce salon.", [{label:"OK", color:"var(--red)", action:()=>location.reload()}]); 
+                if(conn) conn.close(); 
+            }
             if(data.type === 'STATE') { 
                 if(!hasReceivedFirstState) { document.getElementById('splash').classList.add('hidden'); hasReceivedFirstState = true; }
-                // Si la victoire est terminée côté serveur mais qu'on a encore la modale ouverte, on la ferme
                 if(!data.s.victory && activeModal && activeModal.innerHTML.includes("Victoire")) {
                     activeModal.remove(); activeModal = null;
                 }
@@ -359,6 +371,9 @@
 
     function render(oldPlayers = []) {
         if(!hasReceivedFirstState) return;
+        
+        document.getElementById('roundIndicator').innerText = 'MANCHE ' + (gameState.round || 1);
+        
         const board = document.getElementById('gameBoard');
         board.innerHTML = '';
         const sorted = [...gameState.players].sort((a,b) => b.total - a.total);
@@ -370,6 +385,8 @@
             const oldP = oldPlayers.find(x => x.uuid === p.uuid);
             const scoreId = `score-${p.uuid}`;
             
+            const projectedScore = calc.total > 0 ? `<span class="score-preview">→ ${p.total + calc.total}</span>` : '';
+            
             const card = document.createElement('div');
             card.className = `player-card ${p.isReady?'ready':''} ${isMe?'is-me':''}`;
             card.innerHTML = `
@@ -380,7 +397,7 @@
                         <button class="btn-hist" title="Historique" onclick="showHistory('${p.uuid}')">📜</button>
                         ${amIHost && !isMe ? `<button class="btn-kick" title="Exclure" onclick="confirmKick('${p.uuid}', '${p.name}')">✕</button>` : ''}
                     </div>
-                    <div id="${scoreId}" class="score-val" onclick="manualEdit('${p.uuid}')">${p.total}</div>
+                    <div id="${scoreId}" class="score-val" onclick="manualEdit('${p.uuid}')">${p.total}${projectedScore}</div>
                 </div>
                 <div class="calc-box">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -391,10 +408,10 @@
                 </div>
                 ${isMe && !p.isReady ? `
                     <div class="numpad">
-                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val ${ct.cards.includes(v)?'active':''}" onclick="handleIn(${v},'c')">${v}</button>`).join('')}
+                        ${[0,1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<button class="btn-val ${ct.cards.includes(v)?'active':''}" onclick="handleIn(${v},'c')">${v}</button>`).join('')}
                         ${[2,4,6,8,10].map(v => `<button class="btn-val btn-bonus ${ct.bonuses.includes(v)?'active':''}" onclick="handleIn(${v},'b')">+${v}</button>`).join('')}
                         <button class="btn-val btn-mult ${ct.mult===2?'active':''}" onclick="handleIn(2,'m')">x2</button>
-                        <button class="btn-val" style="background:#fff0f0" onclick="handleIn(0,'clear')">C</button>
+                        <button class="btn-val" style="background:#fff0f0" onclick="handleIn(null,'clear')">C</button>
                         <button class="btn-confirm" style="grid-column:span 4; margin-top:5px;" onclick="sendUp(true)">VALIDER</button>
                     </div>
                 ` : p.isReady ? `<div style="text-align:center; margin-top:10px; font-weight:bold; color:var(--winner);">✓ PRÊT ${isMe?`<br><button class="btn-exit-top" style="background:var(--orange); color:white; margin-top:5px; border-radius:12px; padding:5px 15px;" onclick="sendUp(false)">MODIFIER</button>`:''}</div>` : ''}
@@ -423,6 +440,7 @@
 
     function hostFinishRound() {
         const oldState = JSON.parse(JSON.stringify(gameState.players));
+        gameState.round = (gameState.round || 1) + 1;
         gameState.players.forEach(p => { 
             const calc = getCalc(p.currentTurn);
             p.total += calc.total; 
@@ -437,12 +455,44 @@
     function checkVictory() {
         if(!gameState.victory || (activeModal && activeModal.innerHTML.includes("Victoire"))) return;
         const winner = [...gameState.players].sort((a,b)=>b.total-a.total)[0];
-        showModal(`🏆 Victoire de ${winner.name} !`, amIHost ? [{ label: "Nouvelle Partie", color: "var(--blue)", action: () => restartGame() }, { label: "Quitter", color: "var(--red)", action: () => exitGame() }] : [{ label: "Quitter le salon", color: "var(--red)", action: () => exitGame() }]);
+        
+        if (amIHost) {
+            showModal(`🏆 Victoire de ${winner.name} !`, [
+                { label: "Nouvelle Partie", color: "var(--blue)", action: () => restartGame() },
+                { label: "Quitter", color: "var(--red)", action: () => exitGame() }
+            ]);
+        } else {
+            showModal(`🏆 Victoire de ${winner.name} !<br><div style="font-size:0.9rem; margin-top:10px; color:var(--gray); font-weight:bold;">En attente de l'hôte...</div>`, [
+                { label: "Quitter le salon", color: "var(--red)", action: () => exitGame() }
+            ]);
+            
+            const btn = document.getElementById('mod-btn-0');
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                let s = 3;
+                btn.innerText = `Quitter le salon (${s}s)`;
+                const intv = setInterval(() => {
+                    s--;
+                    if (!activeModal) { clearInterval(intv); return; }
+                    if (s > 0) {
+                        btn.innerText = `Quitter le salon (${s}s)`;
+                    } else {
+                        clearInterval(intv);
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                        btn.innerText = 'Quitter le salon';
+                    }
+                }, 1000);
+            }
+        }
     }
 
     function restartGame() {
         gameState.victory = false;
-        // On nettoie la liste des joueurs pour ne garder que ceux dont la connexion Peer est encore active ou l'hôte
+        gameState.round = 1;
         if(amIHost) {
             gameState.players = gameState.players.filter(p => {
                 if(p.uuid === session.uuid) return true;
